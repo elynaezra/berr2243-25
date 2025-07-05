@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Dashboard</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .form-group input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .form-group button {
+      padding: 10px 20px;
+      background-color: #2ecc71;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .form-group button:hover {
+      background-color: #27ae60;
+    }
+
+    .user-card {
+      background: #ecf0f1;
+      border-left: 5px solid #3498db;
+      margin-bottom: 15px;
+      padding: 15px;
+      border-radius: 5px;
+      position: relative;
+    }
+
+    .user-card input {
+      display: block;
+      margin: 5px 0;
+      padding: 8px;
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .user-card h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .user-card p {
+      margin: 5px 0 0;
+      font-size: 14px;
+    }
+
+    .delete-btn, .edit-btn {
+      position: relative;
+      top: 10px;
+      margin-top: 10px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+
+    .edit-btn {
+      background-color: #f39c12;
+    }
+
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+
+    .edit-btn:hover {
+      background-color: #d68910;
+    }
+
+    .save-btn {
+      background-color: #2ecc71;
+      margin-right: 5px;
+    }
+
+    .save-btn:hover {
+      background-color: #27ae60;
+    }
+
+    .cancel-btn {
+      background-color: #95a5a6;
+    }
+
+    .cancel-btn:hover {
+      background-color: #7f8c8d;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>User Management Dashboard</h1>
+  <div class="container">
+    <div class="form-group">
+      <input type="text" id="name" placeholder="Enter Name" />
+      <input type="email" id="email" placeholder="Enter Email" />
+      <input type="text" id="role" placeholder="Enter Role" />
+      <button onclick="addUser()">Add</button>
+    </div>
+
+    <div id="userList"></div>
+  </div>
+
+  <script>
+    const API_URL = 'http://localhost:3000/users';
+
+    async function fetchUsers() {
+      const res = await await fetch(API_URL);
+      const users = await res.json();
+      const userList = document.getElementById('userList');
+      userList.innerHTML = '';
+
+      users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.innerHTML = `
+          <div id="view-${user._id}">
+            <h3>${user.name}</h3>
+            <p>Email: ${user.email}</p>
+            <p>Role: ${user.role}</p>
+            <button class="edit-btn" onclick="editUser('${user._id}', '${user.name}', '${user.email}', '${user.role}')">Edit</button>
+            <button class="delete-btn" onclick="deleteUser('${user._id}')">Delete</button>
+          </div>
+          <div id="edit-${user._id}" style="display:none;">
+            <input id="edit-name-${user._id}" value="${user.name}" />
+            <input id="edit-email-${user._id}" value="${user.email}" />
+            <input id="edit-role-${user._id}" value="${user.role}" />
+            <button class="save-btn" onclick="saveUser('${user._id}')">Save</button>
+            <button class="cancel-btn" onclick="cancelEdit('${user._id}')">Cancel</button>
+          </div>
+        `;
+        userList.appendChild(card);
+      });
+    }
+
+    async function addUser() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const role = document.getElementById('role').value.trim();
+
+      if (!name || !email || !role) {
+        alert('Please fill in all fields');
+        return;
+      }
+
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, role })
+      });
+
+      document.getElementById('name').value = '';
+      document.getElementById('email').value = '';
+      document.getElementById('role').value = '';
+      fetchUsers();
+    }
+
+    async function deleteUser(id) {
+      await fetch(`${API_URL}/${id}`, {
+        method: 'DELETE'
+      });
+      fetchUsers();
+    }
+
+    function editUser(id, name, email, role) {
+      document.getElementById(`view-${id}`).style.display = 'none';
+      document.getElementById(`edit-${id}`).style.display = 'block';
+    }
+
+    function cancelEdit(id) {
+      document.getElementById(`edit-${id}`).style.display = 'none';
+      document.getElementById(`view-${id}`).style.display = 'block';
+    }
+
+    async function saveUser(id) {
+      const name = document.getElementById(`edit-name-${id}`).value;
+      const email = document.getElementById(`edit-email-${id}`).value;
+      const role = document.getElementById(`edit-role-${id}`).value;
+
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, role })
+      });
+
+      fetchUsers();
+    }
+
+    fetchUsers();
+  </script>
+</body>
+</html>
